@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+    <configuration-properties doc:name="Configuration properties" doc:id="298d8e91-f06d-4709-9f54-6b49ebadadff" file="configration.properties" />
+    <http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="7f508f7e-bf70-47af-99da-a0c4f5ef8085">
+        <http:listener-connection host="${http.host}" port="${http.port}" />
+    </http:listener-config>
+    <apikit:config outboundHeadersMapName="outboundHeadersMapName" httpStatusVarName="httpStatus" doc:name="Router" doc:id="0d1fc44e-8b14-46d7-8017-6c1fe109fe27" name="employeeRouter" api="employee-api.raml" />
+    <db:config name="Database_Config" doc:name="Database Config" doc:id="7db33dff-3d16-479d-a996-31cd1e7474fa">
+        <db:my-sql-connection host="${db.host}"
+    port="${db.port}"
+    user="${db.username}"
+    password="${db.password}"
+    database="${db.database}" />
+    </db:config>
+    <db:config name="Database_Config1" doc:name="Database Config" doc:id="711d21fd-2897-41ad-b4c5-d5ba7124d0ce">
+        <db:my-sql-connection host="${db.host}"
+    port="${db.port}"
+    user="${db.username}"
+    password="${db.password}"
+    database="${db.database}"  />
+    </db:config>
+    <db:config name="Database_Config2" doc:name="Database Config" doc:id="358e2105-f72e-4aa6-ab16-a6748a043b97">
+        <db:my-sql-connection host="${db.host}"
+    port="${db.port}"
+    user="${db.username}"
+    password="${db.password}"
+    database="${db.database}"  />
+    </db:config>
+    <db:config name="Database_Config3" doc:name="Database Config" doc:id="18983a86-4a60-4ca3-a6a0-6fd6c52c9e4f">
+        <db:my-sql-connection host="${db.host}"
+    port="${db.port}"
+    user="${db.username}"
+    password="${db.password}"
+    database="${db.database}" />
+    </db:config>
+    <flow name="employee-managment-sysFlow" doc:id="fde33c5b-b3aa-4b64-8ea7-442c368d7239">
+        <http:listener doc:name="Listener" doc:id="edb5f445-ad7a-47f6-9628-6bd2cd769074" config-ref="HTTP_Listener_config" path="/*">
+            <http:response statusCode="#[vars.httpStatus default 200]" />
+        </http:listener>
+        <apikit:router doc:name="APIkit Router" doc:id="d4d78820-80b3-4d73-863e-44baf6f12268" config-ref="employeeRouter" />
+        <error-handler>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="180025d0-9c54-410a-ae62-4a86af3a1878">
+                <ee:transform doc:name="Transform Message" doc:id="ca41a5ec-866c-4b2c-ae88-58c009775b40">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    success: false,
+    message: "An unexpected error occurred",
+    errorType: error.errorType.identifier
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+                <set-variable value="#[500]" doc:name="Set Variable" doc:id="548acde7-8a84-425f-a6ac-40dd46724e11" variableName="httpStatus" />
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="put:\employees\(id):application\json:employeeRouter">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <set-variable value="#[attributes.uriParams.id]" doc:name="Set Variable" doc:id="a3abe3a1-050a-4ce9-abc4-04df0c8a4765" variableName="employeeId" />
+        <db:update doc:name="Update" doc:id="eb4df2c9-123b-46b6-88ee-dee557ff7924" config-ref="Database_Config">
+            <db:sql><![CDATA[UPDATE employees
+SET name = :name,
+    department = :department,
+    status = :status
+WHERE id = :id]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+    id: attributes.uriParams.id,
+    name: payload.name,
+    department: payload.department,
+    status: payload.status
+}]]]></db:input-parameters>
+        </db:update>
+        <ee:transform doc:name="Transform Message" doc:id="a526ce96-a48f-45a0-96f0-0e13520e03a1">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    message: "Employee updated successfully",
+    id: vars.employeeId
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" message="put:\employees\(id):application\json:employeeRouter" />
+    </flow>
+    <flow name="delete:\employees\(id):employeeRouter">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <set-variable value="#[attributes.uriParams.'id']" doc:name="Set Variable" doc:id="77c1ddbb-e786-4804-84f1-ad0f3937c096" variableName="employeeId" />
+        <db:delete doc:name="Delete" doc:id="d3086e0e-842b-4dc1-a2e7-efe7cc6cd6db" config-ref="Database_Config1">
+            <db:sql><![CDATA[DELETE FROM employees
+WHERE id = :id]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+    id: vars.employeeId
+}]]]></db:input-parameters>
+        </db:delete>
+        <ee:transform doc:name="Transform Message" doc:id="48c2a4f5-c070-46ae-8992-4bdb7bffb693">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    message: "Employee deleted successfully",
+    id: vars.employeeId
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" message="delete:\employees\(id):employeeRouter" />
+    </flow>
+    <flow name="get:\employees:employeeRouter">
+        <logger level="INFO" message="#[attributes.queryParams.department]" />
+        <db:select doc:name="Select" doc:id="7cfb1af0-c6b0-4f2f-ac66-8635b0ce890d" config-ref="Database_Config">
+            <db:sql><![CDATA[SELECT * FROM employees;]]></db:sql>
+        </db:select>
+        <ee:transform doc:name="Transform Message" doc:id="1a1c8d7a-64e6-4094-9348-cb4b8e252eee">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\employees\(id):employeeRouter">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <set-variable value="#[attributes.uriParams.'id']" doc:name="Set Variable" doc:id="7c0411c7-4e1f-47d1-b52c-1052a09c1c3d" variableName="employeeId" />
+        <try doc:name="Try" doc:id="be15561c-6d78-4ea3-bfda-6ceab2e2e477">
+            <db:select doc:name="Select" doc:id="2f2f83dd-50c6-4553-a9f6-0aa34a5035e1" config-ref="Database_Config2">
+                <db:sql><![CDATA[SELECT id, name, department, status
+FROM employees
+WHERE id = :id]]></db:sql>
+                <db:input-parameters><![CDATA[#[{
+    id: attributes.uriParams.id
+}]]]></db:input-parameters>
+            </db:select>
+            <choice doc:name="Choice" doc:id="d59434e5-1cdf-42e5-9889-8a4cba39305a">
+                <when expression="#[!isEmpty(payload)]">
+                    <ee:transform doc:name="Transform Message" doc:id="b37135b5-1a5b-4d59-9390-e51fef1e930a">
+                        <ee:message>
+                            <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload[0]]]></ee:set-payload>
+                        </ee:message>
+                    </ee:transform>
+                </when>
+                <otherwise>
+                    <ee:transform doc:name="Transform Message" doc:id="3ef32f68-ec62-4514-a344-e2894d7df5f4">
+                        <ee:message>
+                            <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    message: "Employee not found",
+    id: vars.employeeId
+}]]></ee:set-payload>
+                        </ee:message>
+                    </ee:transform>
+                    <set-variable value="#[404]" doc:name="Set Variable" doc:id="f08af35c-d9bd-4dba-8df9-ff8415dc1402" variableName="httpStatus" />
+                    <logger level="INFO" doc:name="Logger" doc:id="fc456415-453c-43d8-9fd7-8390ee4d1eff" message="#[vars.httpStatus]" />
+                </otherwise>
+            </choice>
+            <error-handler>
+                <on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="fd8cfd13-ac54-4b6c-ba4c-4a6c100c07da">
+                    <ee:transform doc:name="Transform Message" doc:id="8a4f0f1d-6fbe-4322-8d49-1433a16c13d9">
+                        <ee:message>
+                            <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    success: false,
+    message: "Something went wrong",
+    errorType: error.errorType.identifier
+}]]></ee:set-payload>
+                        </ee:message>
+                    </ee:transform>
+                </on-error-continue>
+            </error-handler>
+        </try>
+    </flow>
+    <flow name="post:\employees:application\json:employeeRouter">
+        <logger level="INFO" message="post:\employees:application\json:employeeRouter" />
+        <set-variable value="#[payload]" doc:name="Set Variable" doc:id="25546a38-b8aa-4af4-8f3d-ec4b02d6b306" variableName="employeeData"/>
+		<db:insert doc:name="Insert" doc:id="11f6168c-f7c3-42e9-ab35-52f38c1fa7ef" config-ref="Database_Config3">
+            <db:sql><![CDATA[INSERT INTO employees (name, department, status)
+VALUES (:name, :department, :status)]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+    name: payload.name,
+    department: payload.department,
+    status: payload.status
+}]]]></db:input-parameters>
+        </db:insert>
+        <file:write doc:name="Write" doc:id="4d78a5d4-a5b2-46a5-a255-afcf6f652efb" path="C:\MuleFiles\employee-audit\employee.json" mode="APPEND">
+			<file:content ><![CDATA[#[vars.employeeData]]]></file:content>
+		</file:write>
+		<ee:transform doc:name="Transform Message" doc:id="2fa90f86-9914-4117-a847-8f3d7883970a">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    message: "Employee received successfully",
+    employee: vars.employeeData
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\employees\dashboard:employeeRouter">
+        <scatter-gather doc:name="Scatter-Gather" doc:id="55665e35-97eb-4b22-9ac8-d0e3e85bb424">
+            <route>
+                <db:select doc:name="Select" doc:id="e614e492-f27d-4120-9821-b47534ebb52c" config-ref="Database_Config3">
+                    <db:sql><![CDATA[SELECT * FROM employees;]]></db:sql>
+                </db:select>
+            </route>
+            <route>
+                <db:select doc:name="Select" doc:id="5e6c533b-f74e-4ed2-85f1-ef0a7e3a5770" config-ref="Database_Config3">
+                    <db:sql><![CDATA[SELECT COUNT(*) AS totalEmployees FROM employees;]]></db:sql>
+                </db:select>
+            </route>
+        </scatter-gather>
+        <ee:transform doc:name="Transform Message" doc:id="f7b67f27-f04b-4b73-a960-28b97113c5ce">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    employees: payload[0].payload,
+    totalEmployees: payload[1].payload[0].totalEmployees
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\employees\process:employeeRouter">
+        <logger level="INFO" message="get:\employees\process:employeeRouter" />
+        <db:select doc:name="Select" doc:id="878dc5a0-1003-4e36-be20-0bd77322ef58" config-ref="Database_Config3">
+            <db:sql><![CDATA[SELECT * FROM employees;]]></db:sql>
+        </db:select>
+        <foreach doc:name="For Each" doc:id="dad83dfc-51d9-4ae9-be25-e4d6e815c7aa">
+            <logger level="INFO" doc:name="Logger" doc:id="d72525d4-b345-4589-bf8b-4b11bbd1b96f" message="Processing employee: #[payload.name]" />
+        </foreach>
+        <ee:transform doc:name="Transform Message" doc:id="1b9d9694-20bc-4e6b-bbd0-4ce326f3b151">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="put:\employees\department\(id):application\json:employeeRouter">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="put:\employees\department\(id):application\json:employeeRouter" />
+    </flow>
+    <flow name="delete:\employees\department\(id):employeeRouter">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="delete:\employees\department\(id):employeeRouter" />
+    </flow>
+    <flow name="get:\employees\department:employeeRouter">
+        <logger level="INFO" message="#[attributes.queryParams.department]" />
+		<db:select doc:name="Select" doc:id="ad18be33-313f-4624-9cf9-f7fd90451ccb" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT *
+FROM employees
+WHERE department = :department
+AND (:name IS NULL OR name = :name);]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+    department: attributes.queryParams.department,
+    name: attributes.queryParams.name default null
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="c0a9ce82-4465-4676-be57-4c0fdeb127ac" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+    <flow name="get:\employees\department\(id):employeeRouter">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="get:\employees\department\(id):employeeRouter" />
+    </flow>
+</mule>

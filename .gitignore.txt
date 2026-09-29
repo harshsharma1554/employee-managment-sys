@@ -1,0 +1,18 @@
+# MuleSoft / Anypoint Studio
+target/
+.mule/
+.settings/
+
+# Eclipse project files
+.project
+.classpath
+
+# Local configuration / secrets
+configuration-local.properties
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

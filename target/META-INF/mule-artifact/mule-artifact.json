@@ -1,0 +1,31 @@
+{
+  "configs": [
+    "employee-managment-sys.xml"
+  ],
+  "secureProperties": [],
+  "supportedJavaVersions": [],
+  "redeploymentEnabled": true,
+  "name": "com.mycompany:employee-managment-sys:1.0.0-SNAPSHOT",
+  "minMuleVersion": "4.11.0",
+  "requiredProduct": "MULE_EE",
+  "classLoaderModelLoaderDescriptor": {
+    "id": "mule",
+    "attributes": {
+      "exportedPackages": [],
+      "exportedResources": [
+        "application-types.xml",
+        "configration.properties",
+        "employee-api.raml",
+        "employee-managment-sys.xml",
+        "log4j2.xml"
+      ]
+    }
+  },
+  "bundleDescriptorLoader": {
+    "id": "mule",
+    "attributes": {}
+  },
+  "javaSpecificationVersions": [
+    "17"
+  ]
+}

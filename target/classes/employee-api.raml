@@ -1,0 +1,89 @@
+#%RAML 1.0
+
+title: Employee Management Sys
+version: v1
+baseUri: /api
+
+/employees/dashboard:
+  get:
+    description: Get employee dashboard information
+    responses:
+      200:
+        body:
+          application/json:
+            type: object
+
+/employees/process:
+  get:
+    description: Process employees one by one
+    responses:
+      200:
+        body:
+          application/json:
+
+/employees:
+  get:
+    description: Get all employees
+    responses:
+      200:
+        body:
+          application/json:
+
+  post:
+    description: Create a new employee
+    body:
+      application/json:
+        type: object
+        properties:
+          name: string
+          department: string
+          status: string
+    responses:
+      201:
+        body:
+          application/json:
+
+  /{id}:
+    get:
+      description: Get employee by ID
+      responses:
+        200:
+          body:
+            application/json:
+        404:
+          body:
+            application/json:
+
+    put:
+      description: Update employee
+      body:
+        application/json:
+      responses:
+        200:
+          body:
+            application/json:
+
+    delete:
+      description: Delete employee
+      responses:
+        200:
+          body:
+            application/json:
+
+/employees/department:
+  get:
+    description: Get employees by department and optionally by name
+    queryParameters:
+      department:
+        type: string
+        required: true
+      name:
+        type: string
+        required: false
+    responses:
+      200:
+        body:
+          application/json:
+      400:
+        body:
+          application/json:

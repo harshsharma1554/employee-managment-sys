@@ -1,0 +1,3 @@
+target/
+.mule/
+configuration-local.properties
